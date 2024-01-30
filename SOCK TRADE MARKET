@@ -1,0 +1,630 @@
+I have done this code for Dashboard where i have named a class for class1
+
+using System;
+using System.Collections.Generic;
+using System.Net.WebSockets;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace WpfApp1
+{
+class Class1
+{
+private ClientWebSocket _webSocket = new ClientWebSocket();
+
+    public async Task ConnectAsync(Uri uri, CancellationToken cancellationToken)
+    {
+        await _webSocket.ConnectAsync(uri, cancellationToken);
+    }
+
+    public async Task<string> ReceiveMessageAsync(CancellationToken cancellationToken)
+    {
+        var buffer = new ArraySegment<byte>(new byte[1024]);
+        var result = await _webSocket.ReceiveAsync(buffer, cancellationToken);
+        return Encoding.UTF8.GetString(buffer.Array, 0, result.Count);
+    }
+
+    // Add methods for sending messages, handling disconnects, etc.
+}
+}
+
+I have used here a DASHBOARDSERVICE CLASS FOR DASHBOARD
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Controls;
+
+namespace WpfApp1
+{
+class Dashboard
+{
+// DashboardService.cs
+public class DashboardService
+{
+public List GetDashboardComponents()
+{
+// Implement logic to retrieve or generate a list of available dashboard components
+// You can have MarketDataSection, StockChartsSection, TradeExecutionPanel, etc.
+TradeExecutionPanel tradeExecutionPanel = new TradeExecutionPanel();
+return new List
+{
+new MarketDataSection(),
+new StockChartsSection(),
+tradeExecutionPanel,
+// Add other components as needed
+};
+}
+}
+
+}
+}
+
+using System;
+using System.Net.WebSockets;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+
+class Program
+{
+static async Task Main()
+{
+using (ClientWebSocket webSocket = new ClientWebSocket())
+{
+Uri uri = new Uri("wss://echo.websocket.org");
+await webSocket.ConnectAsync(uri, CancellationToken.None);
+
+        Console.WriteLine("Connected to WebSocket");
+
+        while (webSocket.State == WebSocketState.Open)
+        {
+            string message = Console.ReadLine();
+            await SendMessage(webSocket, message);
+            string response = await ReceiveMessage(webSocket);
+            Console.WriteLine($"Received: {response}");
+        }
+    }
+}
+
+static async Task SendMessage(ClientWebSocket webSocket, string message)
+{
+    byte[] buffer = Encoding.UTF8.GetBytes(message);
+    await webSocket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, CancellationToken.None);
+}
+
+static async Task<string> ReceiveMessage(ClientWebSocket webSocket)
+{
+    byte[] buffer = new byte[1024];
+    WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+    return Encoding.UTF8.GetString(buffer, 0, result.Count);
+}
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
+using static WpfApp1.Dashboard;
+
+namespace WpfApp1
+{
+///
+
+
+/// Interaction logic for MainWindow.xaml
+///
+
+public partial class MainWindow : Window
+{
+private DashboardService _dashboardService;
+private object dashboardGrid;
+    public MainWindow()
+    {
+        InitializeComponent();
+        
+        _dashboardService = new DashboardService();
+        PopulateDashboard();
+    }
+
+    private void PopulateDashboard()
+    {
+        throw new NotImplementedException();
+    }
+
+    private void InitializeComponent()
+    {
+        throw new NotImplementedException();
+    }
+}
+}
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+
+using static WpfApp1.Stockmarketdata;
+
+namespace WpfApp1
+{
+class viewmodelclass
+{
+// MainViewModel.cs
+public class MainViewModel : INotifyPropertyChanged
+{
+private StockDataService _stockDataService;
+private WebSocketManager _webSocketManager;
+
+        public MainViewModel()
+        {
+            _stockDataService = new StockDataService();
+            WebSocketManager = new WebSocketManager();
+        }
+
+        public WebSocketManager WebSocketManager { get => _webSocketManager; set => _webSocketManager = value; }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        // Implement properties and methods for UI bindings and interactions
+    }
+
+}
+
+internal class WebSocketManager
+{
+    internal Task ConnectAsync(Uri uri, CancellationToken none)
+    {
+        throw new NotImplementedException();
+    }
+
+    internal Task ReceiveMessageAsync(CancellationToken none)
+    {
+        throw new NotImplementedException();
+    }
+}
+}
+STOCK MARKET DATA
+
+pip install Flask requests
+
+app.py
+from flask import Flask, render_template, request
+import requests
+import json
+
+app = Flask(name)
+
+@app.route('/')
+def index():
+return render_template('index.html')
+
+@app.route('/stock_chart', methods=['POST'])
+def stock_chart():
+symbol = request.form['symbol']
+api_key = 'YOUR_ALPHA_VANTAGE_API_KEY'
+endpoint = f'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol={symbol}&apikey={api_key}'
+
+response = requests.get(endpoint)
+data = response.json()
+
+# Extracting historical stock data
+dates = list(data['Time Series (Daily)'].keys())
+close_prices = [float(data['Time Series (Daily)'][date]['4. close']) for date in dates]
+
+return render_template('stock_chart.html', symbol=symbol, dates=json.dumps(dates), close_prices=json.dumps(close_prices))
+if name == 'main':
+app.run(debug=True)
+HTML CODE
+
+<title>Stock Market Data</title> Enter Stock Symbol: Submit ------------------------------------------------------------------------- <title>{{ symbol }} Stock Chart</title> <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{{ symbol }} Stock Chart
+<script> const dates = {{ dates }}; const closePrices = {{ close_prices }};
+    const ctx = document.getElementById('stockChart').getContext('2d');
+    const myChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: dates,
+            datasets: [{
+                label: 'Closing Price',
+                data: closePrices,
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1,
+                fill: false,
+            }]
+        },
+        options: {
+            scales: {
+                x: {
+                    type: 'time',
+                    time: {
+                        unit: 'day'
+                    }
+                },
+                y: {
+                    beginAtZero: false
+                }
+            }
+        }
+    });
+</script>
+--------------------------------------------------------------
+Trade Execution-
+
+pip install Flask requests alpaca-trade-api
+
+app.py
+from flask import Flask, render_template, request, redirect, url_for
+import requests
+import json
+from alpaca_trade_api.rest import REST, APIError
+
+app = Flask(name)
+
+Alpaca API credentials
+alpaca_api_key = 'YOUR_ALPACA_API_KEY'
+alpaca_secret_key = 'YOUR_ALPACA_SECRET_KEY'
+alpaca_base_url = 'https://paper-api.alpaca.markets' # Use 'https://api.alpaca.markets' for live trading
+
+alpaca = REST(alpaca_api_key, alpaca_secret_key, base_url=alpaca_base_url)
+
+@app.route('/')
+def index():
+return render_template('index.html')
+
+@app.route('/stock_chart', methods=['POST'])
+def stock_chart():
+symbol = request.form['symbol']
+
+# Fetch stock data as in the previous example
+
+return render_template('stock_chart.html', symbol=symbol, dates=json.dumps(dates), close_prices=json.dumps(close_prices))
+@app.route('/execute_trade', methods=['POST'])
+def execute_trade():
+symbol = request.form['symbol']
+quantity = int(request.form['quantity'])
+side = request.form['side']
+
+try:
+    if side == 'buy':
+        alpaca.submit_order(
+            symbol=symbol,
+            qty=quantity,
+            side='buy',
+            type='market',
+            time_in_force='gtc',
+        )
+    elif side == 'sell':
+        alpaca.submit_order(
+            symbol=symbol,
+            qty=quantity,
+            side='sell',
+            type='market',
+            time_in_force='gtc',
+        )
+
+    return redirect(url_for('trade_summary'))
+
+except APIError as e:
+    return render_template('error.html', error_message=str(e))
+@app.route('/trade_summary')
+def trade_summary():
+# Fetch executed trades from Alpaca account
+trades = alpaca.get_account().trading_activities()
+
+return render_template('trade_summary.html', trades=trades)
+if name == 'main':
+app.run(debug=True)
+<title>Error</title>
+Error
+{{ error_message }}
+
+---------------------------------------------------- <title>Trade Summary</title>
+Trade Summary
+{% for trade in trades %}
+{{ trade.event_type }} - {{ trade.side }} {{ trade.qty }} {{ trade.symbol }} at {{ trade.price }} on {{ trade.timestamp }}
+{% endfor %}
+---------------------------------------------------------------------------
+TradingPlatform
+
+dotnet new web -n TradingPlatform
+
+dotnet add package Microsoft.AspNetCore.Identity.EntityFrameworkCore
+dotnet add package Microsoft.EntityFrameworkCore.SqlServer
+dotnet add package Microsoft.AspNetCore.Authentication.Cookies
+
+// Data/ApplicationDbContext.cs
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+
+public class ApplicationDbContext : IdentityDbContext
+{
+public ApplicationDbContext(DbContextOptions options)
+: base(options)
+{
+}
+}
+// Models/ApplicationUser.cs
+using Microsoft.AspNetCore.Identity;
+
+public class ApplicationUser : IdentityUser
+{
+}
+// Startup.cs
+services.AddDbContext(options =>
+options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+
+services.AddIdentity<ApplicationUser, IdentityRole>()
+.AddEntityFrameworkStores()
+.AddDefaultTokenProviders();
+
+services.Configure(options =>
+{
+// Configure identity options here, e.g., password policy, lockout settings, etc.
+});
+// Controllers/AccountController.cs
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
+
+public class AccountController : Controller
+{
+private readonly SignInManager _signInManager;
+private readonly UserManager _userManager;
+
+public AccountController(
+    UserManager<ApplicationUser> userManager,
+    SignInManager<ApplicationUser> signInManager)
+{
+    _userManager = userManager;
+    _signInManager = signInManager;
+}
+
+[HttpGet]
+public IActionResult Login()
+{
+    return View();
+}
+
+[HttpPost]
+public async Task<IActionResult> Login(LoginViewModel model)
+{
+    if (ModelState.IsValid)
+    {
+        var result = await _signInManager.PasswordSignInAsync(model.UserName, model.Password, model.RememberMe, lockoutOnFailure: false);
+
+        if (result.Succeeded)
+        {
+            // Redirect to the appropriate dashboard based on user roles
+            if (User.IsInRole("Trader"))
+            {
+                return RedirectToAction("TraderDashboard", "Home");
+            }
+            else if (User.IsInRole("Administrator"))
+            {
+                return RedirectToAction("AdminDashboard", "Home");
+            }
+        }
+        else
+        {
+            ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+            return View(model);
+        }
+    }
+
+    return View(model);
+}
+
+// Other authentication actions (e.g., register, logout) can be added here
+}
+[Authorize(Roles = "Trader")]
+public class TraderController : Controller
+{
+// Trader-specific actions
+}
+
+[Authorize(Roles = "Administrator")]
+public class AdminController : Controller
+{
+// Admin-specific actions
+}
+dotnet ef migrations add InitialCreate
+dotnet ef database update
+Error Handling:
+
+// Middleware/ExceptionHandlerMiddleware.cs
+using System;
+using System.Net;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
+
+public class ExceptionHandlerMiddleware
+{
+private readonly RequestDelegate _next;
+private readonly ILogger _logger;
+
+public ExceptionHandlerMiddleware(RequestDelegate next, ILogger<ExceptionHandlerMiddleware> logger)
+{
+    _next = next;
+    _logger = logger;
+}
+
+public async Task Invoke(HttpContext context)
+{
+    try
+    {
+        await _next(context);
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Unhandled exception occurred.");
+
+        context.Response.Clear();
+        context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+        context.Response.ContentType = "text/plain";
+        await context.Response.WriteAsync("An unexpected error occurred. Please try again later.");
+    }
+}
+}
+// Startup.cs
+public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILogger logger)
+{
+if (env.IsDevelopment())
+{
+app.UseDeveloperExceptionPage();
+}
+else
+{
+app.UseExceptionHandler("/Home/Error");
+app.UseHsts();
+}
+
+// Register the custom exception handler middleware
+app.UseMiddleware<ExceptionHandlerMiddleware>();
+
+// Other middleware and configuration...
+
+app.UseMvc();
+}
+// Startup.cs
+public void ConfigureLogging(IServiceCollection services)
+{
+services.AddLogging(builder =>
+{
+builder.AddConsole();
+builder.AddDebug();
+builder.AddEventLog(); // Add other log providers as needed
+});
+}
+// Example usage in a controller
+public class HomeController : Controller
+{
+private readonly ILogger _logger;
+
+public HomeController(ILogger<HomeController> logger)
+{
+    _logger = logger;
+}
+
+public IActionResult Index()
+{
+    _logger.LogInformation("Home/Index accessed.");
+
+    try
+    {
+        // Code that might throw an exception
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "An error occurred in the Index action.");
+        // Handle the exception or rethrow as needed
+    }
+
+    return View();
+}
+}
+dotnet new web -n DashboardApp
+
+dotnet add package Microsoft.AspNetCore.Mvc.NewtonsoftJson
+
+// Controllers/DashboardController.cs
+using Microsoft.AspNetCore.Mvc;
+
+[ApiController]
+[Route("api/dashboard")]
+public class DashboardController : ControllerBase
+{
+[HttpGet("user/{userId}")]
+public IActionResult GetUserDashboard(string userId)
+{
+// Retrieve user-specific dashboard configuration from the database
+// Include components such as news, stock charts, etc.
+
+    var userDashboard = new
+    {
+        userId,
+        components = new[]
+        {
+            new { type = "stockChart", position = 1 },
+            new { type = "newsFeed", position = 2 },
+            // Add more components as needed
+        }
+    };
+
+    return Ok(userDashboard);
+}
+}
+npx create-react-app dashboard-frontend
+cd dashboard-frontend
+
+npm install axios react-grid-layout react-resizable react-bootstrap
+
+// src/components/Dashboard.js
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import GridLayout from 'react-grid-layout';
+import StockChart from './StockChart';
+import NewsFeed from './NewsFeed';
+
+const Dashboard = ({ userId }) => {
+const [layout, setLayout] = useState([]);
+
+useEffect(() => {
+// Fetch user-specific dashboard configuration from the backend
+axios.get(/api/dashboard/user/${userId})
+.then(response => setLayout(response.data.components))
+.catch(error => console.error('Error fetching user dashboard:', error));
+}, [userId]);
+
+const renderComponent = (component) => {
+switch (component.type) {
+case 'stockChart':
+return ;
+case 'newsFeed':
+return ;
+// Add more cases for other components
+default:
+return null;
+}
+};
+
+return (
+
+{layout.map(component => renderComponent(component))}
+
+);
+};
+
+export default Dashboard;
+// src/App.js
+import React from 'react';
+import Dashboard from './components/Dashboard';
+
+const App = () => {
+const userId = '123'; // Replace with actual user ID or obtain from user authentication
+
+return (
+
+Customizable Dashboard
+
+
+
+);
+};
+export default App;
